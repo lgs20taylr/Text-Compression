@@ -1,4 +1,5 @@
 import os
+import re
 import string
 
 # *File Info
@@ -8,37 +9,28 @@ __version__ = "v1.1.0-alpha"
 
 def main():
     """Main entry point of the app"""
-    # mode = input("################\n## Please select a mode. ##\n1 - Search\n2 - Compression\nDecompression")
-    mode = 2
+    mode = int(
+        input(
+            "\n## Please select a mode. ##\n1 - Search\n2 - Compression\n3 - Decompression\n"
+        )
+    )
     match mode:
         case 1:
             searchMenu()
         case 2:
+            print("a")
             compressionMenu()
-        # case 3:
-        #     decompressionMenu()
-
-
-def compressionMenu():
-    """Menu for compressing text"""
-    brokenTextWithoutPunctuation = getSelectedFileText()
-    # typeOfCompression = input("################\n## Please select a type of compression. ##\n1 - Level 1 Compression\n2 - Level 2 Compression")
-    # fileName = input("Enter a file name to save the compressed text to.")
-    typeOfCompression = 1
-    fileName = "output"
-    match typeOfCompression:
-        case 1:
-            level1Compression(
-                brokenTextWithoutPunctuation,
-                turnSelectedFileToPath(fileName, "output files"),
-            )
+        case 3:
+            decompressionMenu()
 
 
 def searchMenu():
     """Menu for searching text"""
     brokenTextWithoutPunctuation = getSelectedFileText()
-    typeOfSearch = input(
-        "################\n## Please select a type of search. ##\n1 - Find the position(s) of a word in the text file."
+    typeOfSearch = int(
+        input(
+            "\n## Please select a type of search. ##\n1 - Find the position(s) of a word in the text file.\n"
+        )
     )
     match typeOfSearch:
         case 1:
@@ -48,10 +40,48 @@ def searchMenu():
             print(f"Word was found at following positions:\n{printableWordIndicies}")
 
 
+def compressionMenu():
+    """Menu for compressing text"""
+    brokenTextWithoutPunctuation = getSelectedFileText()
+    typeOfCompression = int(
+        input(
+            "\n## Please select a type of compression. ##\n1 - Level 1 Compression\n2 - Level 2 Compression\n"
+        )
+    )
+    outputFileName = input(
+        "Enter a file name to save the compressed text to. Do not include a file extension.\n"
+    )
+    outputFilePath = turnSelectedFileToPath(outputFileName, "output files")
+    match typeOfCompression:
+        case 1:
+            level1Compression(brokenTextWithoutPunctuation, outputFilePath)
+
+
+def decompressionMenu():
+    """Menu for decompressing text"""
+    typeOfCompression = int(
+        input(
+            "\n## Please select a type of compression to decompress. ##\n1 - Level 1 Compression\n2 - Level 2 Compression\n"
+        )
+    )
+    inputFileName = input(
+        "Enter a file name to read the compressed text from. Do not include a file extension.\n"
+    )
+    inputFilePath = turnSelectedFileToPath(inputFileName)
+    outputFileName = input(
+        "Enter a file name to save the decompressed text to. Do not include a file extension.\n"
+    )
+    outputFilePath = turnSelectedFileToPath(outputFileName, "output files")
+    match typeOfCompression:
+        case 1:
+            level1Decompression(inputFilePath, outputFilePath)
+
+
 def getSelectedFileText():
     """Gets text from the selected file"""
-    # selectedFile = input("Please enter the name of a text file to read from. Do not include a file extention.")
-    selectedFile = "sentence"
+    selectedFile = input(
+        "Please enter the name of a text file to read from. Do not include a file extention.\n"
+    )
     filePath = turnSelectedFileToPath(selectedFile)
     fileText = getStringFromFile(filePath)
     fileTextWithoutPunctuation = removePunctuation(fileText)
@@ -103,8 +133,7 @@ def makeWordIndiciesPrintable(wordIndicies):
 
 
 def returnIndiciesOfWordInText(text):
-    # wordToLookFor = input("Please enter the word you wish to search for in the file.")
-    wordToLookFor = "Ask"
+    wordToLookFor = input("Please enter the word you wish to search for in the file.\n")
     wordIndicies = findWord(wordToLookFor, text)
     printableWordIndicies = makeWordIndiciesPrintable(wordIndicies)
     return printableWordIndicies
@@ -117,16 +146,54 @@ def level1Compression(text, fileName):
     saveCompressedTextToFile(compressedText, wordHashmap, fileName)
 
 
-def saveCompressedTextToFile(compressedText, wordHashmap, fileName):
+def level1Decompression(inputFilePath, outputFilePath):
+    with open(inputFilePath) as file:
+        compressedTextString = file.readline()[1:-1]
+        wordHashmapString = file.readline()[1:-1]
+    compressedText = compressedTextString.split(", ")
+    wordHashmap = stringToHashmap(wordHashmapString)
+    decompressedText = convertWordHashmapValuesToText(compressedText, wordHashmap)
+    saveDecompressedTextToFile(
+        decompressedText, compressedText, wordHashmap, outputFilePath
+    )
+
+
+def stringToHashmap(stringToConvert):
+    hashmap = {}
+    stringToConvertList = stringToConvert.split(", ")
+    for i in stringToConvertList:
+        word = re.findall("'.*'", i)[0][1:-1]
+        position = re.findall(": .*", i)[0][2:]
+        if position[-1] == "}":
+            position = position[:-1]
+        hashmap[word] = position
+    return hashmap
+
+
+def saveCompressedTextToFile(compressedText, wordHashmap, outputFilePath):
     try:
-        with open(fileName, "w") as f:
+        with open(outputFilePath, "w") as f:
             f.write(str(compressedText))
             f.write("\n")
             f.write(str(wordHashmap))
         print("File saved successfully!")
     except Exception as e:
         print(f"File save unsuccessful.\n{e}")
-        
+
+
+def saveDecompressedTextToFile(
+    decompressedText, compressedText, wordHashmap, outputFilePath
+):
+    try:
+        with open(outputFilePath, "w") as f:
+            f.write(str(decompressedText))
+            f.write("\n")
+            f.write(str(compressedText))
+            f.write("\n")
+            f.write(str(wordHashmap))
+        print("File saved successfully!")
+    except Exception as e:
+        print(f"File save unsuccessful.\n{e}")
 
 
 def makeHashmapOfWords(text):
