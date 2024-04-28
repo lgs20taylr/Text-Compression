@@ -158,11 +158,22 @@ def level1Decompression(inputFilePath, outputFilePath):
     )
 
 
-def stringToHashmap(stringToConvert):
+def stringToHashmap(stringToConvert, wordsOnLeft=True):
     hashmap = {}
     stringToConvertList = stringToConvert.split(", ")
-    for i in stringToConvertList:
+    if wordsOnLeft:
+        for i in stringToConvertList:
+            word = re.findall("'.*'", i)[0][1:-1]
+            if word[-1] == "]":
+                word = word[:-1]
+            position = re.findall(": .*", i)[0][2:]
+            if position[-1] == "}":
+                position = position[:-1]
+            hashmap[word] = position
+    else:
         word = re.findall("'.*'", i)[0][1:-1]
+        if word[-1] == "]":
+            word = word[:-1]
         position = re.findall(": .*", i)[0][2:]
         if position[-1] == "}":
             position = position[:-1]
@@ -220,9 +231,10 @@ def convertTextToWordHashmapValues(text, wordHashmap):
 def convertWordHashmapValuesToText(compressedText, wordHashmap):
     """Converts each value in a list of hashmap keys to the corresponding hashmap value (word)"""
     uncompressedText = []
+    wordHashmap = stringToHashmap(wordHashmap, False)
     for compressedWord in compressedText:
-        uncompressedWord = wordHashmap[compressedWord]
-        uncompressedText.append(uncompressedWord)
+        word = wordHashmap[compressedWord]
+        uncompressedText.append(word)
     return uncompressedText
 
 
